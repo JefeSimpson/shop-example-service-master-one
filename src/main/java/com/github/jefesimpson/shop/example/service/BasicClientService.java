@@ -1,10 +1,7 @@
 package com.github.jefesimpson.shop.example.service;
 
 import com.github.jefesimpson.shop.example.configuration.DatabaseUtils;
-import com.github.jefesimpson.shop.example.model.Client;
-import com.github.jefesimpson.shop.example.model.ModelPermission;
-import com.github.jefesimpson.shop.example.model.Order;
-import com.github.jefesimpson.shop.example.model.Product;
+import com.github.jefesimpson.shop.example.model.*;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.stmt.PreparedQuery;
@@ -136,5 +133,41 @@ public class BasicClientService implements ClientService {
             modelPermissions.add(ModelPermission.CREATE);
         }
         return modelPermissions;
+    }
+
+    @Override
+    public boolean isPhoneUnique(String phone) {
+        try {
+            QueryBuilder<Client, Integer> queryBuilder = dao().queryBuilder();
+            queryBuilder.where().eq(Client.COLUMN_PHONE, phone);
+            PreparedQuery<Client> preparedQuery = queryBuilder.prepare();
+            Client client = dao().queryForFirst(preparedQuery);
+            if(client == null) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new RuntimeException("dao exception");
+        }
+    }
+
+    @Override
+    public boolean isEmailUnique(String email) {
+        try {
+            QueryBuilder<Client, Integer> queryBuilder = dao().queryBuilder();
+            queryBuilder.where().eq(Client.COLUMN_EMAIL, email);
+            PreparedQuery<Client> preparedQuery = queryBuilder.prepare();
+            Client client = dao().queryForFirst(preparedQuery);
+            if (client == null) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new RuntimeException("dao exception");
+        }
     }
 }

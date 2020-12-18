@@ -18,6 +18,10 @@ public class Employee {
     @DatabaseField(dataType = DataType.ENUM_STRING)
     private EmployeeDepartment department;
     @DatabaseField
+    private String email;
+    @DatabaseField
+    private String phone;
+    @DatabaseField
     private String login;
     @DatabaseField
     private String password;
@@ -26,15 +30,20 @@ public class Employee {
     @DatabaseField(dataType = DataType.SERIALIZABLE)
     private LocalDate dateOfExtermination;
 
-    public Employee(int id, String name, String surname, EmployeeDepartment department, String login, String password, String token, LocalDate dateOfExtermination) {
-        this.id = id;
-        this.name = name;
-        this.surname = surname;
-        this.department = department;
-        this.login = login;
-        this.password = password;
-        this.token = token;
-        this.dateOfExtermination = dateOfExtermination;
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     @Override
@@ -44,11 +53,26 @@ public class Employee {
                 ", name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
                 ", department=" + department +
+                ", email='" + email + '\'' +
+                ", phone='" + phone + '\'' +
                 ", login='" + login + '\'' +
                 ", password='" + password + '\'' +
                 ", token='" + token + '\'' +
                 ", dateOfExtermination=" + dateOfExtermination +
                 '}';
+    }
+
+    public Employee(int id, String name, String surname, EmployeeDepartment department, String email, String phone, String login, String password, String token, LocalDate dateOfExtermination) {
+        this.id = id;
+        this.name = name;
+        this.surname = surname;
+        this.department = department;
+        this.email = email;
+        this.phone = phone;
+        this.login = login;
+        this.password = password;
+        this.token = token;
+        this.dateOfExtermination = dateOfExtermination;
     }
 
     @Override

@@ -17,4 +17,6 @@ public interface EmployeeService extends Service<Employee> {
     List<ModelPermission> access(Employee employee, Client target);
     List<ModelPermission> access(Employee employee, Product target);
     List<ModelPermission> access(Employee employee, Order order);
+    boolean isPhoneUnique(String phone);
+    boolean isEmailUnique(String email);
 }

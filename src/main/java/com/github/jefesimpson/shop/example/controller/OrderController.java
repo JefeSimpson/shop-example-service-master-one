@@ -12,10 +12,7 @@ import com.github.jefesimpson.shop.example.service.EmployeeService;
 import com.github.jefesimpson.shop.example.service.Service;
 import com.j256.ormlite.logger.Logger;
 import com.j256.ormlite.logger.LoggerFactory;
-import io.javalin.http.BadRequestResponse;
-import io.javalin.http.Context;
-import io.javalin.http.ForbiddenResponse;
-import io.javalin.http.InternalServerErrorResponse;
+import io.javalin.http.*;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -34,10 +31,36 @@ public class OrderController implements AuthorizationController<Order> {
         this.employeeService = employeeService;
         this.mapperFactory = mapperFactory;
     }
-//
-//    @Override
-//    public void create(Context context) {
-//        try {
+
+    @Override
+    public void create(Context context) {
+        try {
+            if (employeeSenderChecker(context)) {
+                Employee employee = employeeSender(context);
+                Order target = mapperFactory.objectMapper(ModelPermission.CREATE).readValue(context.body(), Order.class);
+                if (employeeService.access(employee, target).contains(ModelPermission.CREATE)) {
+                    orderService.create(target);
+                    context.status(Constants.CREATED_201);
+                }
+                else {
+                    throw new ForbiddenResponse();
+                }
+            } else {
+                if (clientSenderChecker(context)) {
+                    Client client = clientSender(context);
+                    Order target = mapperFactory.objectMapper(ModelPermission.CREATE).readValue(context.body(), Order.class);
+                    if (clientService.access(client, target).contains(ModelPermission.CREATE)) {
+                        orderService.create(target);
+                        context.status(Constants.CREATED_201);
+                    }
+                    else {
+                        throw new ForbiddenResponse();
+                    }
+                }
+                else {
+                    throw new UnauthorizedResponse();
+                }
+            }
 //            Client client = clientSenderOrThrowUnauthorized(context);
 //            Employee employee = employeeSenderOrThrowUnauthorized(context);
 //            Order target = mapperFactory.objectMapper(ModelPermission.CREATE).readValue(context.body(), Order.class);
@@ -66,79 +89,102 @@ public class OrderController implements AuthorizationController<Order> {
 //                    throw new ForbiddenResponse();
 //                }
 //            }
-//        } catch (JsonProcessingException | SQLException e) {
-//            e.printStackTrace();
-//            throw new BadRequestResponse();
-//        }
-//    }
-//
-//    @Override
-//    public void delete(Context context, int id) {
-//        try {
-//            Employee employee = employeeSenderOrThrowUnauthorized(context);
-//            Order target = orderService.findById(id);
-//
-//            LOGGER.info(String.format("Sender {%s} started to delete order {%s} ", employee, target));
-//            if (employeeService.access(employee, target).contains(ModelPermission.DELETE)){
-//                orderService.deleteById(id);
-//                LOGGER.info(String.format("Sender {%s} successfully deleted order {%s} ", employee, target));
-//                context.status(Constants.NO_CONTENT_204);
-//            }
-//            else{
-//                LOGGER.info(String.format("Sender {%s} is not authorized to delete order {%s}. Throwing Forbidden", employee, target));
-//                throw new ForbiddenResponse();
-//            }
-//        } catch (SQLException e) {
-//            e.printStackTrace();
-//            throw new BadRequestResponse();
-//        }
-//    }
-//
-//    @Override
-//    public void update(Context context, int id) {
-//        try {
-//            Employee employee = employeeSenderOrThrowUnauthorized(context);
-//            Order target = orderService.findById(id);
-//            LOGGER.info(String.format("Sender {%s} started to update order {%s} ", employee, target));
-//
-//            if (employeeService.access(employee, target).contains(ModelPermission.UPDATE)){
-//                Order updated = mapperFactory.objectMapper(ModelPermission.UPDATE).readValue(context.body(), Order.class);
-//                updated.setId(id);
-//                orderService.update(updated);
-//
-//                LOGGER.info(String.format("Sender {%s} successfully updated order {%s} ", employee, target));
-//                context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(updated));
-//            }
-//            else{
-//                LOGGER.info(String.format("Sender {%s} is not authorized to update order {%s}. Throwing Forbidden", employee, target));
-//                throw new ForbiddenResponse();
-//            }
-//        } catch (SQLException | JsonProcessingException e) {
-//            e.printStackTrace();
-//            throw new BadRequestResponse();
-//        }
-//    }
-//
-//    @Override
-//    public void getAll(Context context) {
-//        Employee employee = employeeSenderOrThrowUnauthorized(context);
-//        LOGGER.info(String.format("Sender {%s} started to getAll", employee));
-//        try {
-//            List<Order> orders = orderService.all()
-//                    .stream()
-//                    .filter(target -> employeeService.access(employee, target).contains(ModelPermission.READ))
-//                    .collect(Collectors.toList());
-//            LOGGER.info(String.format("Sender {%s} successfully gotAll", employee));
-//            context.result(mapperFactory.objectMapper(ModelPermission.READ).writeValueAsString(orders));
-//        } catch (SQLException | JsonProcessingException e) {
-//            e.printStackTrace();
-//            throw new InternalServerErrorResponse();
-//        }
-//    }
-//
-//    @Override
-//    public void getOne(Context context, int id) {
-//        try {
+        } catch (JsonProcessingException | SQLException e) {
+            e.printStackTrace();
+            throw new BadRequestResponse();
+        }
+    }
+
+    @Override
+    public void delete(Context context, int id) {
+        try {
+            Employee employee = employeeSenderOrThrowUnauthorized(context);
+            Order target = orderService.findById(id);
+
+            LOGGER.info(String.format("Sender {%s} started to delete order {%s} ", employee, target));
+            if (employeeService.access(employee, target).contains(ModelPermission.DELETE)){
+                orderService.deleteById(id);
+                LOGGER.info(String.format("Sender {%s} successfully deleted order {%s} ", employee, target));
+                context.status(Constants.NO_CONTENT_204);
+            }
+            else{
+                LOGGER.info(String.format("Sender {%s} is not authorized to delete order {%s}. Throwing Forbidden", employee, target));
+                throw new ForbiddenResponse();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            throw new BadRequestResponse();
+        }
+    }
+
+    @Override
+    public void update(Context context, int id) {
+        try {
+            Employee employee = employeeSenderOrThrowUnauthorized(context);
+            Order target = orderService.findById(id);
+            LOGGER.info(String.format("Sender {%s} started to update order {%s} ", employee, target));
+
+            if (employeeService.access(employee, target).contains(ModelPermission.UPDATE)){
+                Order updated = mapperFactory.objectMapper(ModelPermission.UPDATE).readValue(context.body(), Order.class);
+                updated.setId(id);
+                orderService.update(updated);
+
+                LOGGER.info(String.format("Sender {%s} successfully updated order {%s} ", employee, target));
+                context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(updated));
+            }
+            else{
+                LOGGER.info(String.format("Sender {%s} is not authorized to update order {%s}. Throwing Forbidden", employee, target));
+                throw new ForbiddenResponse();
+            }
+        } catch (SQLException | JsonProcessingException e) {
+            e.printStackTrace();
+            throw new BadRequestResponse();
+        }
+    }
+
+    @Override
+    public void getAll(Context context) {
+        Employee employee = employeeSenderOrThrowUnauthorized(context);
+        LOGGER.info(String.format("Sender {%s} started to getAll", employee));
+        try {
+            List<Order> orders = orderService.all()
+                    .stream()
+                    .filter(target -> employeeService.access(employee, target).contains(ModelPermission.READ))
+                    .collect(Collectors.toList());
+            LOGGER.info(String.format("Sender {%s} successfully gotAll", employee));
+            context.result(mapperFactory.objectMapper(ModelPermission.READ).writeValueAsString(orders));
+        } catch (SQLException | JsonProcessingException e) {
+            e.printStackTrace();
+            throw new InternalServerErrorResponse();
+        }
+    }
+
+    @Override
+    public void getOne(Context context, int id) {
+        try {
+            if (employeeSenderChecker(context)) {
+                Employee employee = employeeSender(context);
+                Order target = orderService.findById(id);
+                if (employeeService.access(employee, target).contains(ModelPermission.READ)) {
+                    context.result(mapperFactory.objectMapper(ModelPermission.READ).writeValueAsString(target));
+                }
+                else {
+                    throw new ForbiddenResponse();
+                }
+            } else {
+                if(clientSenderChecker(context)) {
+                    Client client = clientSender(context);
+                    Order target = orderService.findById(id);
+                    if(clientService.access(client, target).contains(ModelPermission.READ)) {
+                        context.result(mapperFactory.objectMapper(ModelPermission.READ).writeValueAsString(target));
+                    }
+                    else {
+                        throw new ForbiddenResponse();
+                    }
+                } else {
+                    throw new UnauthorizedResponse();
+                }
+            }
 //            Employee employee = employeeSenderOrThrowUnauthorized(context);
 //            Client client = clientSenderOrThrowUnauthorized(context);
 //            Order target = orderService.findById(id);
@@ -165,12 +211,12 @@ public class OrderController implements AuthorizationController<Order> {
 //                    throw new ForbiddenResponse();
 //                }
 //            }
-//        } catch (SQLException | JsonProcessingException e) {
-//            e.printStackTrace();
-//            throw new InternalServerErrorResponse();
-//        }
-//    }
-//
+        } catch (SQLException | JsonProcessingException e) {
+            e.printStackTrace();
+            throw new InternalServerErrorResponse();
+        }
+    }
+
     @Override
     public ClientService clientService() {
         return clientService;
@@ -181,28 +227,4 @@ public class OrderController implements AuthorizationController<Order> {
         return employeeService;
     }
 
-    @Override
-    public void create(Context context) {
-
-    }
-
-    @Override
-    public void delete(Context context, int id) {
-
-    }
-
-    @Override
-    public void update(Context context, int id) {
-
-    }
-
-    @Override
-    public void getAll(Context context) {
-
-    }
-
-    @Override
-    public void getOne(Context context, int id) {
-
-    }
 }

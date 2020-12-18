@@ -34,8 +34,8 @@ public class Main {
                 .addSerializer(Employee.class, new EmployeeSerializer())
                 .addSerializer(Order.class, new OrderSerializer())
                 .addSerializer(Product.class, new ProductSerializer());
-        module.addDeserializer(Client.class, new ClientDeserializer())
-                .addDeserializer(Employee.class, new EmployeeDeserializer())
+        module.addDeserializer(Client.class, new ClientDeserializer(clientService))
+                .addDeserializer(Employee.class, new EmployeeDeserializer(employeeService))
                 .addDeserializer(Order.class, new OrderDeserializer())
                 .addDeserializer(Product.class, new ProductDeserializer());
 

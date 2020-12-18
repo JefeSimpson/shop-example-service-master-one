@@ -19,5 +19,7 @@ public interface ClientService extends Service<Client> {
     List<ModelPermission> access(Client client, Client target);
     List<ModelPermission> access(Client client, Product target);
     List<ModelPermission> access(Client client, Order order);
+    boolean isPhoneUnique(String phone);
+    boolean isEmailUnique(String email);
 
 }

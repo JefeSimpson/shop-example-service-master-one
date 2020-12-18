@@ -135,4 +135,42 @@ public class BasicEmployeeService implements EmployeeService {
         }
         return null;
     }
+
+    @Override
+    public boolean isPhoneUnique(String phone) {
+        try {
+            QueryBuilder<Employee, Integer> queryBuilder = dao().queryBuilder();
+            queryBuilder.where().eq(Employee.COLUMN_PHONE, phone);
+            PreparedQuery<Employee> preparedQuery = queryBuilder.prepare();
+            Employee employee = dao().queryForFirst(preparedQuery);
+            if(employee == null) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new RuntimeException("dao exception");
+        }
+    }
+
+    @Override
+    public boolean isEmailUnique(String email) {
+        try {
+            QueryBuilder<Employee, Integer> queryBuilder = dao().queryBuilder();
+            queryBuilder.where().eq(Employee.COLUMN_EMAIL, email);
+            PreparedQuery<Employee> preparedQuery = queryBuilder.prepare();
+            Employee employee = dao().queryForFirst(preparedQuery);
+            if (employee == null) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            throw new RuntimeException("dao exception");
+        }
+    }
+
+
 }

@@ -57,6 +57,13 @@ public interface AuthorizationController <T> extends Controller<T> {
         String password = context.basicAuthCredentials().getPassword();
         return employeeService().authenticate(login, password);
     }
+    default Employee employeeSenderOrThrowUnauthorized(Context context) {
+        Employee employee = employeeSender(context);
+        if (employee == null) {
+            throw new UnauthorizedResponse();
+        }
+        return employee;
+    }
 
 
     default Boolean employeeSenderChecker(Context context) {
