@@ -16,6 +16,8 @@ public interface ClientService extends Service<Client> {
     Client authenticate(String token, LocalDate date);
     boolean tokenExist(String token);
     Client findByToken(String token);
+//    String tokenCreator();
+//    String tokenGetter();
     List<ModelPermission> access(Client client, Client target);
     List<ModelPermission> access(Client client, Product target);
     List<ModelPermission> access(Client client, Order order);

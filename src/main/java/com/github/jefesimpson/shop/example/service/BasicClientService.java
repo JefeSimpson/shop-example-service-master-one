@@ -9,6 +9,8 @@ import com.j256.ormlite.stmt.QueryBuilder;
 import org.mindrot.jbcrypt.BCrypt;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -16,6 +18,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BasicClientService implements ClientService {
+//    private String tokenSaver;
+
+//    public String getTokenSaver() {
+//        return tokenSaver;
+//    }
+//
+//    public void setTokenSaver(String tokenSaver) {
+//        this.tokenSaver = tokenSaver;
+//    }
+
+    static Logger LOGGER = LoggerFactory.getLogger(BasicClientService.class);
     @Override
     public Dao<Client, Integer> dao() throws SQLException {
         return DaoManager.createDao(DatabaseUtils.connectionSource(), Client.class);
@@ -24,17 +37,22 @@ public class BasicClientService implements ClientService {
     @Override
     public Client authenticate(String login, String password) {
 
-        if(!loginExist(login)) {
+        if (!loginExist(login)) {
             throw new RuntimeException("login not exists");
         }
         Client client = findByLogin(login);
-        if(client.getToken() != null) {
+        if (client.getToken() != null) {
             throw new RuntimeException("token exists");
         }
-        if(BCrypt.checkpw(password, client.getPassword())) {
-            SecretGenerator secretGenerator = new DefaultSecretGenerator();
-            String secret = secretGenerator.generate();
-            client.setToken(secret);
+        if (BCrypt.checkpw(password, client.getPassword())) {
+            try {
+                String token = tokenCreator();
+                client.setToken(token);
+                dao().update(client);
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+            LOGGER.info("Returning client");
             return client;
         }
         else{
@@ -95,6 +113,13 @@ public class BasicClientService implements ClientService {
         }
     }
 
+    public String tokenCreator() {
+        SecretGenerator secretGenerator = new DefaultSecretGenerator();
+        String secret = secretGenerator.generate();
+        return secret;
+    }
+
+
     @Override
     public List<ModelPermission> access(Client client, Client target) {
         List<ModelPermission> modelPermissions = new ArrayList<>();
@@ -142,11 +167,7 @@ public class BasicClientService implements ClientService {
             queryBuilder.where().eq(Client.COLUMN_PHONE, phone);
             PreparedQuery<Client> preparedQuery = queryBuilder.prepare();
             Client client = dao().queryForFirst(preparedQuery);
-            if(client == null) {
-                return true;
-            } else {
-                return false;
-            }
+            return client == null;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new RuntimeException("dao exception");
@@ -160,11 +181,7 @@ public class BasicClientService implements ClientService {
             queryBuilder.where().eq(Client.COLUMN_EMAIL, email);
             PreparedQuery<Client> preparedQuery = queryBuilder.prepare();
             Client client = dao().queryForFirst(preparedQuery);
-            if (client == null) {
-                return true;
-            } else {
-                return false;
-            }
+            return client == null;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new RuntimeException("dao exception");

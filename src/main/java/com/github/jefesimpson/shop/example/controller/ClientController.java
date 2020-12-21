@@ -125,12 +125,12 @@ public class ClientController implements AuthorizationController<Client> {
                 Employee employee = employeeSender(context);
                 Client target = clientService.findById(id);
                 if (employeeService.access(employee, target).contains(ModelPermission.UPDATE)) {
-                    context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(target));
+                    context.result(mapperFactory.patchMapper(ModelPermission.UPDATE).writeValueAsString(target));
 
-                    Client updated = mapperFactory.objectMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
+                    Client updated = mapperFactory.patchMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
                     updated.setId(id);
                     clientService.update(updated);
-                    context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(updated));
+                    context.result(mapperFactory.patchMapper(ModelPermission.UPDATE).writeValueAsString(updated));
                 }
                 else {
                     throw new ForbiddenResponse();
@@ -143,7 +143,7 @@ public class ClientController implements AuthorizationController<Client> {
                     if(clientService.access(client, target).contains(ModelPermission.UPDATE)) {
                         context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(target));
 
-                        Client updated = mapperFactory.objectMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
+                        Client updated = mapperFactory.patchMapper(ModelPermission.UPDATE).readValue(context.body(), Client.class);
                         updated.setId(id);
                         clientService.update(updated);
                         context.result(mapperFactory.objectMapper(ModelPermission.UPDATE).writeValueAsString(updated));

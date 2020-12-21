@@ -9,6 +9,8 @@ import com.j256.ormlite.stmt.QueryBuilder;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import org.mindrot.jbcrypt.BCrypt;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -17,6 +19,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class BasicEmployeeService implements EmployeeService {
+    Logger LOGGER = LoggerFactory.getLogger(BasicEmployeeService.class);
     @Override
     public Dao<Employee, Integer> dao() throws SQLException {
         return DaoManager.createDao(DatabaseUtils.connectionSource(), Employee.class);
@@ -26,16 +29,14 @@ public class BasicEmployeeService implements EmployeeService {
     public Employee authenticate(String login, String password) {
 
         if(!loginExist(login)) {
-            throw new RuntimeException("login not exists");
+            return null;
         }
         Employee employee = findByLogin(login);
         if(employee.getToken() != null) {
             throw new RuntimeException("token exists");
         }
         if(BCrypt.checkpw(password, employee.getPassword())) {
-            SecretGenerator secretGenerator = new DefaultSecretGenerator();
-            String secret = secretGenerator.generate();
-            employee.setToken(secret);
+            employee.setToken(BCrypt.hashpw(tokenCreator(), BCrypt.gensalt()));
             return employee;
         }
         else{
@@ -97,6 +98,13 @@ public class BasicEmployeeService implements EmployeeService {
     }
 
     @Override
+    public String tokenCreator() {
+        SecretGenerator secretGenerator = new DefaultSecretGenerator();
+        String secret = secretGenerator.generate();
+        return secret;
+    }
+
+    @Override
     public List<ModelPermission> access(Employee employee, Employee target) {
         if(employee.getDepartment() == EmployeeDepartment.MANAGER){
             List<ModelPermission> modelPermissions = new ArrayList<>(Arrays.asList(ModelPermission.values()));
@@ -143,11 +151,7 @@ public class BasicEmployeeService implements EmployeeService {
             queryBuilder.where().eq(Employee.COLUMN_PHONE, phone);
             PreparedQuery<Employee> preparedQuery = queryBuilder.prepare();
             Employee employee = dao().queryForFirst(preparedQuery);
-            if(employee == null) {
-                return true;
-            } else {
-                return false;
-            }
+            return employee == null;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new RuntimeException("dao exception");
@@ -161,11 +165,7 @@ public class BasicEmployeeService implements EmployeeService {
             queryBuilder.where().eq(Employee.COLUMN_EMAIL, email);
             PreparedQuery<Employee> preparedQuery = queryBuilder.prepare();
             Employee employee = dao().queryForFirst(preparedQuery);
-            if (employee == null) {
-                return true;
-            } else {
-                return false;
-            }
+            return employee == null;
         } catch (SQLException throwables) {
             throwables.printStackTrace();
             throw new RuntimeException("dao exception");

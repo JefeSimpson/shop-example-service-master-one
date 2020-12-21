@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.github.jefesimpson.shop.example.model.Client;
 
+import com.github.jefesimpson.shop.example.model.Employee;
 import com.github.jefesimpson.shop.example.service.ClientService;
 import com.github.jefesimpson.shop.example.service.EmployeeService;
 import io.javalin.http.BadRequestResponse;
@@ -33,15 +34,21 @@ public class ClientDeserializer extends StdDeserializer<Client> implements Valid
         String phone = root.get(Client.COLUMN_PHONE).asText();
         String login = root.get(Client.COLUMN_LOGIN).asText();
         String password = root.get(Client.COLUMN_PASSWORD).asText();
-        String token = root.get(Client.COLUMN_TOKEN).asText();
 
         String passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
-        String tokenHash = BCrypt.hashpw(token, BCrypt.gensalt());
-        if (!(root.get(Client.COLUMN_DATE_EXTERMINATION) instanceof NullNode)) {
-            LocalDate date = LocalDate.parse(root.get(Client.COLUMN_DATE_EXTERMINATION).asText());
-            return new Client(0, name, surname, email, phone, login, passwordHash, tokenHash, date);
-        } else {
-            return new Client(0,name,surname,email,phone,login,passwordHash,tokenHash, null);
+
+        if(phoneChecker(phone) && emailChecker(email)) {
+            if (!(root.get(Client.COLUMN_DATE_EXTERMINATION) instanceof NullNode) && !(root.get(Client.COLUMN_TOKEN) instanceof NullNode)) {
+                LocalDate date = LocalDate.parse(root.get(Client.COLUMN_DATE_EXTERMINATION).asText());
+                String token = root.get(Client.COLUMN_TOKEN).asText();
+                String tokenHash = BCrypt.hashpw(token, BCrypt.gensalt());
+                return new Client(0, name, surname, email, phone, login, passwordHash, tokenHash, date);
+            } else {
+                return new Client(0,name,surname,email,phone,login,passwordHash, null, null);
+            }
+        }
+        else {
+            throw new BadRequestResponse();
         }
 
     }
@@ -49,11 +56,11 @@ public class ClientDeserializer extends StdDeserializer<Client> implements Valid
     @Override
     public boolean phoneChecker(String phone) {
         if(clientService.isPhoneUnique(phone)) {
-            if(phone.charAt(0) == '+' && phone.charAt(1) == '7' && phone.charAt(2) == '7' && phone.matches("[0-9]+") && phone.length() == 12) {
+            if(phone.charAt(0) == '8' && phone.charAt(1) == '7' && phone.matches("[0-9]+") && phone.length() == 11) {
                 return true;
             }
             else {
-                throw new BadRequestResponse("phone isn't unique. Use another phone");
+                throw new BadRequestResponse("phone isn't valid. Try to write right");
             }
         }
         else {
@@ -73,6 +80,7 @@ public class ClientDeserializer extends StdDeserializer<Client> implements Valid
             throw new BadRequestResponse("email isn't unique. Use another email");
         }
     }
+
 
     @Override
     public ClientService clientService() {

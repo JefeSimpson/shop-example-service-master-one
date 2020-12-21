@@ -38,13 +38,17 @@ public class EmployeeDeserializer extends StdDeserializer<Employee> implements V
 
         String passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
 
-        if (!(root.get(Employee.COLUMN_DATE_EXTERMINATION) instanceof NullNode) && !(root.get(Employee.COLUMN_TOKEN) instanceof NullNode)) {
+        if(emailChecker(email) && phoneChecker(phone)) {
+            if (!(root.get(Employee.COLUMN_DATE_EXTERMINATION) instanceof NullNode) && !(root.get(Employee.COLUMN_TOKEN) instanceof NullNode)) {
                 LocalDate date = LocalDate.parse(root.get(Employee.COLUMN_DATE_EXTERMINATION).asText());
                 String token = root.get(Employee.COLUMN_TOKEN).asText();
                 String tokenHash = BCrypt.hashpw(token, BCrypt.gensalt());
                 return new Employee(0, name, surname, department, email, phone, login, passwordHash, tokenHash, date);
+            } else {
+                return new Employee(0, name, surname, department, email, phone, login, passwordHash, null, null);
+            }
         } else {
-            return new Employee(0, name, surname, department, email, phone, login, passwordHash, null, null);
+            throw new BadRequestResponse();
         }
 
     }
@@ -52,11 +56,11 @@ public class EmployeeDeserializer extends StdDeserializer<Employee> implements V
     @Override
     public boolean phoneChecker(String phone) {
         if(employeeService.isPhoneUnique(phone)) {
-            if(phone.charAt(0) == '+' && phone.charAt(1) == '7' && phone.charAt(2) == '7' && phone.matches("[0-9]+") && phone.length() == 12) {
+            if(phone.charAt(0) == '8' && phone.charAt(1) == '7' && phone.matches("[0-9]+") && phone.length() == 11) {
                 return true;
             }
             else {
-                throw new BadRequestResponse("phone isn't unique. Use another phone");
+                throw new BadRequestResponse("phone isn't valid.");
             }
         }
         else {

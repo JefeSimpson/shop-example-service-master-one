@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.github.jefesimpson.shop.example.configuration.ModelPermissionMapperFactory;
 import com.github.jefesimpson.shop.example.controller.*;
-import com.github.jefesimpson.shop.example.json.deserializer.ClientDeserializer;
-import com.github.jefesimpson.shop.example.json.deserializer.EmployeeDeserializer;
-import com.github.jefesimpson.shop.example.json.deserializer.OrderDeserializer;
-import com.github.jefesimpson.shop.example.json.deserializer.ProductDeserializer;
+import com.github.jefesimpson.shop.example.json.deserializer.*;
 import com.github.jefesimpson.shop.example.json.serializer.ClientSerializer;
 import com.github.jefesimpson.shop.example.json.serializer.EmployeeSerializer;
 import com.github.jefesimpson.shop.example.json.serializer.OrderSerializer;
@@ -27,26 +24,17 @@ public class Main {
         Javalin app = Javalin.create(javalinConfig -> {
             javalinConfig.defaultContentType = "application/json";
         });
-
-
+        BasicClientService basicClientService = new BasicClientService();
+        SimpleModule simpleModule = new SimpleModule();
+        simpleModule.addDeserializer(Client.class, new ClientPatchDeserializer(basicClientService));
         SimpleModule module = new SimpleModule();
-        module.addSerializer(Client.class, new ClientSerializer())
-                .addSerializer(Employee.class, new EmployeeSerializer())
-                .addSerializer(Order.class, new OrderSerializer())
-                .addSerializer(Product.class, new ProductSerializer());
-        module.addDeserializer(Client.class, new ClientDeserializer(clientService))
-                .addDeserializer(Employee.class, new EmployeeDeserializer(employeeService))
-                .addDeserializer(Order.class, new OrderDeserializer())
-                .addDeserializer(Product.class, new ProductDeserializer());
-
         Map<ModelPermission, Module> permission = new HashMap<>();
+        Map<ModelPermission, Module> patchPermission = new HashMap<>();
+        patchPermission.put(ModelPermission.UPDATE, simpleModule);
         permission.put(ModelPermission.CREATE, module);
         permission.put(ModelPermission.READ, module);
         permission.put(ModelPermission.UPDATE, module);
-        ModelPermissionMapperFactory modelPermissionMapper = new ModelPermissionMapperFactory(permission);
-
-
-        BasicClientService basicClientService = new BasicClientService();
+        ModelPermissionMapperFactory modelPermissionMapper = new ModelPermissionMapperFactory(permission, patchPermission);
         Service<Order> orderService = new OrderService();
         Service<Product> productService = new ProductService();
         BasicEmployeeService basicEmployeeService = new BasicEmployeeService();
@@ -54,6 +42,18 @@ public class Main {
         Controller<Employee> employeeController = new  EmployeeController(basicEmployeeService, basicClientService, modelPermissionMapper);
         Controller<Order> orderController = new OrderController(orderService, basicClientService, basicEmployeeService, modelPermissionMapper);
         Controller<Product> productController = new ProductController(productService, basicClientService, basicEmployeeService, modelPermissionMapper);
+        module.addDeserializer(Client.class, new ClientDeserializer(basicClientService))
+                .addDeserializer(Employee.class, new EmployeeDeserializer(basicEmployeeService))
+                .addDeserializer(Order.class, new OrderDeserializer())
+                .addDeserializer(Product.class, new ProductDeserializer());
+        module.addSerializer(Client.class, new ClientSerializer())
+                .addSerializer(Employee.class, new EmployeeSerializer())
+                .addSerializer(Order.class, new OrderSerializer())
+                .addSerializer(Product.class, new ProductSerializer());
+
+
+
+
 
 
         app.routes(() -> {

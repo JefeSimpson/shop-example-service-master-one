@@ -5,4 +5,5 @@ import com.github.jefesimpson.shop.example.model.ModelPermission;
 
 public interface MapperFactory {
     ObjectMapper objectMapper(ModelPermission modelPermission);
+    ObjectMapper patchMapper(ModelPermission modelPermission);
 }
